@@ -204,6 +204,8 @@ def pathfinder_micro(me: Wizard, obstacles, start, goal):
     if math.hypot(start[0]-goal[0], start[1]-goal[1]) <= distance_to_succeed:
         return [start, goal]
 
+    goal = (int(goal[0]), int(goal[1]))
+
 
     while len(open_nodes) > 0:
         open_nodes.sort(key=lambda st:st['dist']+math.hypot(st['node'][0]-goal[0], st['node'][1]-goal[1]))
@@ -538,7 +540,6 @@ class MyStrategy:
             move.turn = angle
             if me.remaining_action_cooldown_ticks == 0 and \
                 me.remaining_cooldown_ticks_by_action[ActionType.STAFF]==0:
-                print("do staff")
                 move.action = ActionType.STAFF
 
         elif len(enemies_in_cast_range) > 0 and move.action != ActionType.STAFF:
@@ -548,7 +549,6 @@ class MyStrategy:
             if me.remaining_action_cooldown_ticks == 0 and \
                 me.remaining_cooldown_ticks_by_action[ActionType.MAGIC_MISSILE]==0:
 
-                print("do missile")
                 move.min_cast_distance = target["dist"] - target["unit"].radius + game.magic_missile_radius
                 move.max_cast_distance = target["dist"] + target["unit"].radius + game.magic_missile_radius
                 move.action = ActionType.MAGIC_MISSILE
@@ -630,7 +630,6 @@ class MyStrategy:
 
         if world.tick_index % 2 == 0 or len(self.path_micro) == 0:
             obstacles = self.build_obstacles_list(me, world)
-            print("\nRun pathfinder from ({},{}) to ({},{})".format(me.x, me.y, goal[0], goal[1]))
             self.path_micro = pathfinder_micro(me, obstacles, (me.x, me.y), goal)
             self.path_micro.pop()
         next_point = self.path_micro.pop()
@@ -639,7 +638,7 @@ class MyStrategy:
         move.strafe_speed = strafe_speed
         move.turn = me.get_angle_to(goal[0], goal[1])
         if len(self.path_micro) == 0:
-            self.path_macro.pop()
+            self.path_macro = pathfinder_macro(nearest_waypoint, self.current_goal)
 
 
     def calc_speeds(self, me: Wizard, x, y):
@@ -674,6 +673,8 @@ class MyStrategy:
 
     def move(self, me: Wizard, world: World, game: Game, move: Move):
         if self.respawned(me):
+            self.path_micro = []
+            self.path_micro = []
             self.fightning = False
             self.return_to_track = False
             if me.x < world.width/2:
@@ -699,7 +700,7 @@ class MyStrategy:
 
         self.last_coors = (me.x, me.y)
 
-        if world.tick_index % 2500 > 2300 and world.tick_index % 2500 < 2500:
+        '''if world.tick_index % 2500 > 2300 and world.tick_index % 2500 < 2500:
             locations_to_wait = [(1000,1000), (1400,1400),(2600,2600),(3000,3000)]
             locations_to_wait.sort(key = lambda loc: me.get_distance_to(loc[0], loc[1]))
             closest = locations_to_wait[0]
@@ -708,10 +709,10 @@ class MyStrategy:
                 self.wait_for_bonus = True
         if world.tick_index % 2500 > 300 and self.wait_for_bonus:
             self.wait_for_bonus = False
-            self.select_new_goal(me, world)
+            self.select_new_goal(me, world)'''
 
         enemies_in_range = self.find_enemies_nearby(me, world)
-        if len(enemies_in_range) == 0 or (enemies_in_range[0]["dist"] > me.cast_range/2 and self.wait_for_bonus):
+        if len(enemies_in_range) == 0:
             if self.fightning:
                 self.fightning = False
                 self.return_to_track = True
